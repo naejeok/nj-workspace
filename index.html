@@ -1053,15 +1053,28 @@ function setPipeStep(n, state){
 function parseOutput(text){
   const naverIdx=text.indexOf('네이버 블로그 버전');
   const tistIdx= text.indexOf('티스토리 버전');
-  let naver='', tistory='';
+  let naver='', tistory='', naverTitle='', tistoryTitle='';
+
   if(naverIdx!==-1 && tistIdx!==-1){
-    naver=text.slice(naverIdx, tistIdx).replace(/={3,}.*네이버.*={3,}/,'').trim();
-    tistory=text.slice(tistIdx).replace(/={3,}.*티스토리.*={3,}/,'').trim();
+    naver=text.slice(naverIdx, tistIdx).replace(/={3,}[^=\n]*={3,}/g,'').trim();
+    tistory=text.slice(tistIdx).replace(/={3,}[^=\n]*={3,}/g,'').trim();
   } else {
-    // 구분선 못 찾으면 전체를 네이버에
     naver=text.trim();
   }
-  return {naver, tistory};
+
+  // ##NAVER_TITLE## 추출
+  const ntMatch=text.match(/##NAVER_TITLE##\s*([^\n]+)/);
+  if(ntMatch) naverTitle=ntMatch[1].replace(/\(.*?\)/g,'').trim();
+
+  // ##TISTORY_TITLE## 추출
+  const ttMatch=text.match(/##TISTORY_TITLE##\s*([^\n]+)/);
+  if(ttMatch) tistoryTitle=ttMatch[1].replace(/\(.*?\)/g,'').trim();
+
+  // 제목 태그를 본문에서 제거
+  naver=naver.replace(/##NAVER_TITLE##[^\n]*/,'').trim();
+  tistory=tistory.replace(/##TISTORY_TITLE##[^\n]*/,'').trim();
+
+  return {naver, tistory, naverTitle, tistoryTitle};
 }
 
 /* 메인 파이프라인 실행 */
@@ -1168,14 +1181,14 @@ ${revised}
 - AI 흔적 완전 제거 (너무 정형화된 표현, 반복 패턴 등)
 - 두 버전 명확히 구분
 
-출력 형식 (정확히 지켜주세요):
+출력 형식 (정확히 지켜주세요. 제목 줄은 반드시 포함):
 ===== 📌 네이버 블로그 버전 =====
-[제목]
+##NAVER_TITLE## (여기에 40자 이내 확정 제목만)
 [본문]
 [해시태그]
 
 ===== 📌 티스토리 버전 =====
-[제목]
+##TISTORY_TITLE## (여기에 SEO 확정 제목만)
 [본문]
 [실용 정보]
 [해시태그]`;
@@ -1183,11 +1196,13 @@ ${revised}
     setPipeStep(4,'done');
 
     /* ── 결과 채우기 ── */
-    const {naver, tistory}=parseOutput(final);
+    const {naver, tistory, naverTitle}=parseOutput(final);
     const naverTA=document.getElementById('d-naver');
     const tistTA=document.getElementById('d-tistory');
+    const titleEl=document.getElementById('d_final_title');
     if(naverTA){ naverTA.value=naver; naverTA.dispatchEvent(new Event('input')); }
     if(tistTA){ tistTA.value=tistory; tistTA.dispatchEvent(new Event('input')); }
+    if(titleEl && naverTitle){ titleEl.value=naverTitle; titleEl.dispatchEvent(new Event('input')); updateTitleLen(); }
     autoSave();
 
     btn.innerHTML='✅ 완성! 다시 생성';
