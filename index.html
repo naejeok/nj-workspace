@@ -6,7 +6,7 @@
   <title>내적친구 컴퍼니 — 작업툴</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;900&family=Noto+Sans+KR:wght@300;400;500&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet" />
-  <script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=081885be55d9663a991e9a9d9f2c5836&libraries=services"></script>
+  <!-- 카카오 JS SDK 제거됨: REST API + Netlify Function 방식으로 변경 -->
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -1282,7 +1282,7 @@ function renderStars(){
 }
 
 /* ── 카카오맵 ── */
-function kakaoSearch(){
+async function kakaoSearch(){
   const q=(document.getElementById('d_kakao_q')?.value||'').trim();
   if(!q) return;
 
@@ -1291,45 +1291,48 @@ function kakaoSearch(){
   resultsEl.classList.add('show');
 
   try {
-    const ps=new kakao.maps.services.Places();
-    ps.keywordSearch(q, function(data, status){
-      resultsEl.innerHTML='';
-      if(status===kakao.maps.services.Status.OK && data.length>0){
-        // 최대 5개 결과 표시
-        data.slice(0,5).forEach(place=>{
-          const item=document.createElement('div');
-          item.className='kakao-result-item';
-          item.innerHTML=`<div class="kakao-result-name">${place.place_name}</div><div class="kakao-result-addr">${place.address_name}${place.phone?' · '+place.phone:''}</div>`;
-          item.onclick=()=>{
-            // 장소명 자동 입력 (비어있을 때만)
-            if(!document.getElementById('d_place').value)
-              document.getElementById('d_place').value=place.place_name;
-            // 지역 자동 입력 (비어있을 때만)
-            if(!document.getElementById('d_region').value){
-              const addr=place.address_name||'';
-              const regionMatch=addr.match(/[가-힣]+구\s[가-힣]+동|[가-힣]+구/);
-              if(regionMatch) document.getElementById('d_region').value=regionMatch[0];
-            }
-            // 주소/정보 자동 입력
-            document.getElementById('d_info').value=
-              `📍 ${place.address_name}\n⏰ 영업시간: 확인 필요\n💰 가격대: 확인 필요\n🔗 ${place.place_url}`;
-            // 전화번호 자동 입력 (비어있을 때만)
-            if(place.phone && !document.getElementById('d_phone').value)
-              document.getElementById('d_phone').value=place.phone;
-            resultsEl.classList.remove('show');
-            document.getElementById('d_kakao_q').value='';
-            autoSave();
-          };
-          resultsEl.appendChild(item);
-        });
-      } else {
-        resultsEl.innerHTML='<div class="kakao-result-item"><div class="kakao-result-name" style="color:var(--muted)">검색 결과가 없어요. 직접 입력해주세요.</div></div>';
-        setTimeout(()=>resultsEl.classList.remove('show'), 2500);
-      }
-    });
+    const res = await fetch(`/.netlify/functions/kakao?query=${encodeURIComponent(q)}`);
+    const data = await res.json();
+
+    resultsEl.innerHTML='';
+    if(data.error){
+      resultsEl.innerHTML=`<div class="kakao-result-item"><div class="kakao-result-name" style="color:#c46070">오류: ${data.error}</div></div>`;
+      setTimeout(()=>resultsEl.classList.remove('show'), 3500);
+      return;
+    }
+    if(data.documents && data.documents.length>0){
+      data.documents.slice(0,5).forEach(place=>{
+        const item=document.createElement('div');
+        item.className='kakao-result-item';
+        item.innerHTML=`<div class="kakao-result-name">${place.place_name}</div><div class="kakao-result-addr">${place.address_name}${place.phone?' · '+place.phone:''}</div>`;
+        item.onclick=()=>{
+          if(!document.getElementById('d_place').value)
+            document.getElementById('d_place').value=place.place_name;
+          if(!document.getElementById('d_region').value){
+            const addr=place.address_name||'';
+            const regionMatch=addr.match(/[가-힣]+구\s[가-힣]+동|[가-힣]+구/);
+            if(regionMatch) document.getElementById('d_region').value=regionMatch[0];
+          }
+          document.getElementById('d_info').value=
+            `📍 ${place.address_name}
+⏰ 영업시간: 확인 필요
+💰 가격대: 확인 필요
+🔗 ${place.place_url}`;
+          if(place.phone && !document.getElementById('d_phone').value)
+            document.getElementById('d_phone').value=place.phone;
+          resultsEl.classList.remove('show');
+          document.getElementById('d_kakao_q').value='';
+          autoSave();
+        };
+        resultsEl.appendChild(item);
+      });
+    } else {
+      resultsEl.innerHTML='<div class="kakao-result-item"><div class="kakao-result-name" style="color:var(--muted)">검색 결과가 없어요. 직접 입력해주세요.</div></div>';
+      setTimeout(()=>resultsEl.classList.remove('show'), 2500);
+    }
   } catch(e) {
-    resultsEl.innerHTML='<div class="kakao-result-item"><div class="kakao-result-name" style="color:#c46070">JS SDK 도메인 등록이 필요해요. developers.kakao.com → 앱 → JS SDK 도메인에 현재 도메인 추가</div></div>';
-    setTimeout(()=>resultsEl.classList.remove('show'), 4000);
+    resultsEl.innerHTML=`<div class="kakao-result-item"><div class="kakao-result-name" style="color:#c46070">검색 오류: ${e.message}</div></div>`;
+    setTimeout(()=>resultsEl.classList.remove('show'), 3000);
   }
 }
 // 외부 클릭 시 결과 닫기
