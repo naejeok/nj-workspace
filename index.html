@@ -1,0 +1,1278 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>내적친구 컴퍼니 — 작업툴</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;900&family=Noto+Sans+KR:wght@300;400;500&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── Lock Screen ── */
+    #lock-screen {
+      position: fixed; inset: 0; z-index: 9999;
+      background: #080808;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 0;
+    }
+
+    #lock-screen.hidden {
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.4s ease;
+    }
+
+    .lock-brand {
+      font-family: 'Noto Serif KR', serif;
+      font-weight: 900;
+      font-size: 28px;
+      color: #f0ebe3;
+      letter-spacing: -0.01em;
+      margin-bottom: 6px;
+    }
+
+    .lock-sub {
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 12px;
+      color: #585858;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      margin-bottom: 52px;
+    }
+
+    .lock-input-wrap {
+      position: relative;
+      margin-bottom: 14px;
+    }
+
+    #lock-input {
+      width: 220px;
+      background: #111;
+      border: 1px solid #2a2a2a;
+      border-radius: 10px;
+      color: #f0ebe3;
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 22px;
+      font-weight: 300;
+      letter-spacing: 0.5em;
+      text-align: center;
+      padding: 14px 16px;
+      outline: none;
+      transition: border-color 0.2s;
+      -webkit-text-security: disc;
+    }
+
+    #lock-input:focus { border-color: #c9a0aa; }
+    #lock-input.error { border-color: #c46070; animation: shake 0.35s ease; }
+
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      20%      { transform: translateX(-8px); }
+      40%      { transform: translateX(8px); }
+      60%      { transform: translateX(-5px); }
+      80%      { transform: translateX(5px); }
+    }
+
+    .lock-hint {
+      font-size: 11px;
+      color: #585858;
+      letter-spacing: 0.08em;
+      text-align: center;
+      height: 16px;
+    }
+
+    .lock-hint.err { color: #c46070; }
+
+    #lock-btn {
+      margin-top: 24px;
+      width: 220px;
+      padding: 13px;
+      background: #c9a0aa;
+      border: none;
+      border-radius: 10px;
+      color: #200a10;
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      transition: background 0.18s;
+    }
+    #lock-btn:hover { background: #d9b0ba; }
+
+    :root {
+      --bg:     #080808;
+      --s1:     #111111;
+      --s2:     #161616;
+      --s3:     #1c1c1c;
+      --s4:     #202020;
+      --border: #252525;
+      --brd2:   #2e2e2e;
+      --text:   #e0dbd3;
+      --muted:  #585858;
+      --muted2: #888;
+      --a1:     #d4a855;  --a1d: rgba(212,168,85,0.12);
+      --a2:     #a8c5da;  --a2d: rgba(168,197,218,0.12);
+      --a3:     #c9a0aa;  --a3d: rgba(201,160,170,0.12);
+      --white:  #f0ebe3;
+      --rad:    10px;
+    }
+
+    html, body { height: 100%; background: var(--bg); color: var(--text);
+      font-family: 'Noto Sans KR', sans-serif; font-weight: 300; font-size: 14px;
+      line-height: 1.6; -webkit-font-smoothing: antialiased; }
+
+    /* ── App shell ── */
+    .app { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+    /* ── Header ── */
+    .header { display: flex; align-items: center; justify-content: space-between;
+      padding: 0 28px; height: 52px; border-bottom: 1px solid var(--border);
+      background: var(--bg); flex-shrink: 0; }
+    .header-brand { font-family: 'Noto Serif KR', serif; font-weight: 600;
+      font-size: 13px; color: var(--white); letter-spacing: 0.04em; }
+    .header-right { font-size: 11px; color: var(--muted); letter-spacing: 0.08em; }
+
+    /* ── Tab Bar ── */
+    .tab-bar { display: flex; border-bottom: 1px solid var(--border);
+      background: var(--s1); flex-shrink: 0; }
+    .tab-btn { flex: 1; padding: 0 24px; height: 48px; background: none; border: none;
+      border-bottom: 2px solid transparent; color: var(--muted);
+      font-family: 'Noto Sans KR', sans-serif; font-size: 13px; font-weight: 400;
+      letter-spacing: 0.04em; cursor: pointer; transition: all 0.2s ease;
+      display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .tab-btn:hover { color: var(--text); background: var(--s2); }
+    .tab-btn.active[data-tab="choboshine"] { color: var(--a1); border-bottom-color: var(--a1); background: var(--a1d); }
+    .tab-btn.active[data-tab="naejuk"]     { color: var(--a2); border-bottom-color: var(--a2); background: var(--a2d); }
+    .tab-btn.active[data-tab="dateblog"]   { color: var(--a3); border-bottom-color: var(--a3); background: var(--a3d); }
+    .tab-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: 0.5; }
+    .tab-btn.active .tab-dot { opacity: 1; }
+
+    /* ── Tab Content ── */
+    .tab-content { flex: 1; overflow: hidden; }
+    .tab-panel { display: none; height: 100%; overflow-y: auto; }
+    .tab-panel.active { display: flex; flex-direction: column; }
+
+    /* ── Panel grid (sidebar + output) ── */
+    .panel-inner { display: grid; grid-template-columns: 310px 1fr; height: 100%; overflow: hidden; }
+
+    /* ── Sidebar ── */
+    .sidebar { border-right: 1px solid var(--border); overflow-y: auto; padding: 22px;
+      background: var(--s1); display: flex; flex-direction: column; gap: 18px; }
+    .sidebar-title { font-family: 'Noto Serif KR', serif; font-weight: 600;
+      font-size: 18px; color: var(--white); line-height: 1.3; margin-bottom: 4px; }
+    .sidebar-sub { font-size: 12px; color: var(--muted); line-height: 1.6; }
+    .divider { height: 1px; background: var(--border); }
+
+    /* ── Mode Toggle ── */
+    .mode-toggle { display: flex; background: var(--s2); border: 1px solid var(--border);
+      border-radius: var(--rad); padding: 3px; gap: 3px; }
+    .mode-btn { flex: 1; padding: 7px 0; background: none; border: none; color: var(--muted);
+      font-family: 'Noto Sans KR', sans-serif; font-size: 12px; cursor: pointer;
+      border-radius: 7px; transition: all 0.18s; letter-spacing: 0.04em; }
+    .mode-btn.active { background: var(--s3); color: var(--white); }
+
+    /* ── Fields ── */
+    .field-group { display: flex; flex-direction: column; gap: 13px; }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field-label { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+    .field input, .field select, .field textarea {
+      background: var(--s2); border: 1px solid var(--border); border-radius: 7px;
+      color: var(--text); font-family: 'Noto Sans KR', sans-serif; font-size: 13px;
+      font-weight: 300; padding: 9px 12px; outline: none; transition: border-color 0.2s;
+      resize: vertical; width: 100%; }
+    .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--brd2); }
+    .field select option { background: #1a1a1a; }
+
+    /* ── Buttons ── */
+    .btn { padding: 10px 18px; border: none; border-radius: 7px;
+      font-family: 'Noto Sans KR', sans-serif; font-size: 13px; cursor: pointer;
+      transition: all 0.18s; letter-spacing: 0.03em; }
+    .btn-primary-a1 { background: var(--a1); color: #1a1200; font-weight: 500; }
+    .btn-primary-a1:hover { background: #e6b85c; }
+    .btn-primary-a2 { background: var(--a2); color: #001824; font-weight: 500; }
+    .btn-primary-a2:hover { background: #b8d5e8; }
+    .btn-primary-a3 { background: var(--a3); color: #200a10; font-weight: 500; }
+    .btn-primary-a3:hover { background: #d9b0ba; }
+    .btn-ghost { background: var(--s2); border: 1px solid var(--border); color: var(--muted2); }
+    .btn-ghost:hover { border-color: var(--brd2); color: var(--white); }
+    .btn-row { display: flex; gap: 8px; }
+    .btn-row .btn { flex: 1; }
+
+    /* ── Output Area ── */
+    .output-area { display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
+    .output-header { display: flex; align-items: center; justify-content: space-between;
+      padding: 13px 24px; border-bottom: 1px solid var(--border); flex-shrink: 0; background: var(--s1); }
+    .output-title { font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+    .copy-btn { display: flex; align-items: center; gap: 6px; background: none;
+      border: 1px solid var(--border); color: var(--muted2); font-family: 'Noto Sans KR', sans-serif;
+      font-size: 11px; padding: 5px 12px; border-radius: 6px; cursor: pointer;
+      transition: all 0.18s; letter-spacing: 0.06em; }
+    .copy-btn:hover { border-color: var(--brd2); color: var(--white); }
+    .copy-btn.copied { border-color: #4caf50; color: #4caf50; }
+    .output-editor { flex: 1; overflow: hidden; display: flex; }
+    .output-editor textarea { flex: 1; background: transparent; border: none; color: var(--text);
+      font-family: 'Noto Sans KR', sans-serif; font-size: 14px; font-weight: 300;
+      line-height: 2; padding: 28px 36px; outline: none; resize: none; width: 100%; }
+
+    /* ── 내적친구 Step ── */
+    .naejuk-panel { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+    .naejuk-body { flex: 1; display: grid; grid-template-columns: 310px 1fr; overflow: hidden; }
+    .step-bar { display: flex; border-bottom: 1px solid var(--border); background: var(--s1);
+      padding: 0 24px; flex-shrink: 0; }
+    .step-btn { padding: 0 18px; height: 40px; background: none; border: none;
+      border-bottom: 2px solid transparent; color: var(--muted);
+      font-family: 'Noto Sans KR', sans-serif; font-size: 12px; cursor: pointer;
+      transition: all 0.18s; display: flex; align-items: center; gap: 7px; letter-spacing: 0.04em; }
+    .step-btn:hover { color: var(--text); }
+    .step-btn.active { color: var(--a2); border-bottom-color: var(--a2); }
+    .step-num { width: 18px; height: 18px; border-radius: 50%; border: 1px solid currentColor;
+      display: flex; align-items: center; justify-content: center; font-size: 10px; flex-shrink: 0; }
+    .step-btn.done .step-num { background: var(--a2); border-color: var(--a2); color: #001824; }
+    .mode-section { display: none; }
+    .mode-section.active { display: contents; }
+
+    /* ══════════════════════════════════════════════
+       데이트 블로그 — 새 레이아웃
+    ══════════════════════════════════════════════ */
+
+    /* 전체: sidebar | right-area */
+    .date-layout {
+      display: grid;
+      grid-template-columns: 310px 1fr;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    /* 오른쪽: photo-zone(위) + split-output(아래) */
+    .date-right {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Photo Zone ── */
+    .photo-zone {
+      flex-shrink: 0;
+      height: 230px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      background: var(--s2);
+    }
+
+    /* 업로드 드롭존 */
+    .photo-dropzone {
+      flex-shrink: 0;
+      width: 180px;
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      cursor: pointer;
+      transition: background 0.2s;
+      position: relative;
+    }
+    .photo-dropzone:hover, .photo-dropzone.drag-over {
+      background: var(--s3);
+    }
+    .photo-dropzone input[type="file"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer;
+      width: 100%; height: 100%;
+    }
+    .dropzone-icon {
+      width: 40px; height: 40px; border-radius: 50%;
+      border: 1px dashed var(--brd2);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--muted);
+    }
+    .dropzone-text { font-size: 11px; color: var(--muted); text-align: center;
+      line-height: 1.6; letter-spacing: 0.04em; }
+    .dropzone-sub { font-size: 10px; color: var(--muted); opacity: 0.6; }
+
+    /* 사진 스크롤 트레이 */
+    .photo-tray {
+      flex: 1;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px 18px;
+      overflow-x: auto;
+      overflow-y: hidden;
+    }
+
+    /* 사진 카드 */
+    .photo-card {
+      flex-shrink: 0;
+      width: 148px;
+      background: var(--s1);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      transition: border-color 0.2s;
+    }
+    .photo-card:hover { border-color: var(--brd2); }
+
+    /* 썸네일 */
+    .photo-thumb {
+      width: 100%;
+      height: 90px;
+      object-fit: cover;
+      display: block;
+      background: var(--s3);
+    }
+
+    /* 카드 아래 메타 */
+    .photo-meta {
+      padding: 8px 9px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .photo-name {
+      font-size: 10px;
+      color: var(--muted2);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* 섹션 배치 선택 */
+    .photo-pos {
+      background: var(--s2);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--text);
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 11px;
+      font-weight: 300;
+      padding: 4px 7px;
+      outline: none;
+      width: 100%;
+      cursor: pointer;
+    }
+    .photo-pos option { background: #1a1a1a; }
+
+    /* 사진 설명 */
+    .photo-desc-input {
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--border);
+      color: var(--muted2);
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 11px;
+      font-weight: 300;
+      padding: 3px 0;
+      outline: none;
+      width: 100%;
+    }
+    .photo-desc-input::placeholder { color: var(--muted); }
+    .photo-desc-input:focus { border-bottom-color: var(--brd2); color: var(--text); }
+
+    /* 삭제 버튼 */
+    .photo-del {
+      position: absolute;
+      top: 5px; right: 5px;
+      width: 20px; height: 20px;
+      background: rgba(8,8,8,0.75);
+      border: none;
+      border-radius: 50%;
+      color: var(--muted2);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px;
+      line-height: 1;
+      transition: all 0.15s;
+      opacity: 0;
+    }
+    .photo-card:hover .photo-del { opacity: 1; }
+    .photo-del:hover { background: rgba(200,60,60,0.8); color: #fff; }
+
+    /* 빈 상태 메시지 */
+    .photo-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      color: var(--muted);
+      font-size: 12px;
+      gap: 6px;
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    /* 배치 뱃지 색상 */
+    .pos-badge {
+      display: inline-block;
+      font-size: 9px;
+      padding: 2px 7px;
+      border-radius: 20px;
+      letter-spacing: 0.06em;
+      font-weight: 400;
+    }
+    .pos-intro   { background: rgba(212,168,85,0.2);  color: var(--a1); }
+    .pos-body1   { background: rgba(168,197,218,0.2); color: var(--a2); }
+    .pos-body2   { background: rgba(140,180,140,0.2); color: #8ab47a; }
+    .pos-body3   { background: rgba(180,140,200,0.2); color: #b48ac8; }
+    .pos-end     { background: rgba(201,160,170,0.2); color: var(--a3); }
+    .pos-none    { background: var(--s3); color: var(--muted); }
+
+    /* ── Split Output (블로그 2버전) ── */
+    .split-output { display: grid; grid-template-columns: 1fr 1fr; flex: 1; overflow: hidden; }
+    .split-col { display: flex; flex-direction: column; overflow: hidden;
+      border-right: 1px solid var(--border); }
+    .split-col:last-child { border-right: none; }
+    .split-header { display: flex; align-items: center; justify-content: space-between;
+      padding: 11px 18px; border-bottom: 1px solid var(--border); background: var(--s1); flex-shrink: 0; }
+    .split-label { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; }
+    .split-col:first-child .split-label { color: #8ab47a; }
+    .split-col:last-child .split-label { color: #8a9ec2; }
+    .split-col textarea { flex: 1; background: transparent; border: none; color: var(--text);
+      font-family: 'Noto Sans KR', sans-serif; font-size: 13px; font-weight: 300;
+      line-height: 2; padding: 18px 22px; outline: none; resize: none; }
+
+    /* ── Save indicator ── */
+    .save-indicator { position: fixed; bottom: 20px; right: 20px; background: var(--s2);
+      border: 1px solid var(--border); color: var(--muted); font-size: 11px;
+      padding: 6px 14px; border-radius: 20px; letter-spacing: 0.08em;
+      opacity: 0; transform: translateY(4px); transition: all 0.3s; pointer-events: none; }
+    .save-indicator.show { opacity: 1; transform: translateY(0); }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--brd2); border-radius: 2px; }
+  </style>
+</head>
+<body>
+
+<!-- ── Lock Screen ── -->
+<div id="lock-screen">
+  <div class="lock-brand">내적친구 컴퍼니</div>
+  <div class="lock-sub">작업툴</div>
+  <div class="lock-input-wrap">
+    <input id="lock-input" type="password" maxlength="10"
+           placeholder="····" autocomplete="off"
+           onkeydown="if(event.key==='Enter') unlock()" oninput="clearErr()" />
+  </div>
+  <div class="lock-hint" id="lock-hint">비밀번호를 입력하세요</div>
+  <button id="lock-btn" onclick="unlock()">입장</button>
+</div>
+
+<div class="app" id="main-app" style="visibility:hidden;">
+
+  <!-- Header -->
+  <div class="header">
+    <span class="header-brand">내적친구 컴퍼니 — 작업툴</span>
+    <span class="header-right">자동저장 켜짐</span>
+  </div>
+
+  <!-- Tab Bar -->
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="choboshine" onclick="switchTab('choboshine')">
+      <span class="tab-dot"></span>초보시네
+    </button>
+    <button class="tab-btn" data-tab="naejuk" onclick="switchTab('naejuk')">
+      <span class="tab-dot"></span>내적친구
+    </button>
+    <button class="tab-btn" data-tab="dateblog" onclick="switchTab('dateblog')">
+      <span class="tab-dot"></span>데이트 블로그
+    </button>
+  </div>
+
+  <div class="tab-content">
+
+    <!-- ═══════════════════════════
+         TAB 1: 초보시네
+    ═══════════════════════════ -->
+    <div class="tab-panel active" id="tab-choboshine">
+      <div class="panel-inner">
+        <div class="sidebar">
+          <div>
+            <div class="sidebar-title">초보시네</div>
+            <div class="sidebar-sub">드라마 만들기 — 아무것도 모르는 사람이 일단 해보는 채널</div>
+          </div>
+          <div class="mode-toggle">
+            <button class="mode-btn active" id="modeA-btn" onclick="setChoboMode('A')">🎭 드라마 대본</button>
+            <button class="mode-btn" id="modeB-btn" onclick="setChoboMode('B')">🎬 브이로그</button>
+          </div>
+          <div class="divider"></div>
+
+          <!-- MODE A -->
+          <div class="mode-section active" id="chobo-modeA">
+            <div class="field-group">
+              <div class="field"><label class="field-label">드라마 제목</label>
+                <input type="text" id="c_title" placeholder="이번 숏폼 드라마 제목" oninput="autoSave()" /></div>
+              <div class="field"><label class="field-label">핵심 주제 / 소재</label>
+                <input type="text" id="c_theme" placeholder="어떤 상황, 어떤 감정 (한 줄)" oninput="autoSave()" /></div>
+              <div class="field"><label class="field-label">여주 캐릭터</label>
+                <textarea id="c_hero" rows="2" placeholder="이름 / 성격 / 처한 상황" oninput="autoSave()"></textarea></div>
+              <div class="field"><label class="field-label">서브 캐릭터</label>
+                <textarea id="c_sub" rows="2" placeholder="이름 / 성격 / 여주와의 관계" oninput="autoSave()"></textarea></div>
+              <div class="field"><label class="field-label">주요 로케이션</label>
+                <input type="text" id="c_loc" placeholder="1~2곳 (카페, 집 실내 등)" oninput="autoSave()" /></div>
+              <div class="field"><label class="field-label">씬 흐름</label>
+                <textarea id="c_scenes" rows="3" placeholder="씬 수 + 기승전결 흐름" oninput="autoSave()"></textarea></div>
+              <div class="field"><label class="field-label">엔딩 톤</label>
+                <select id="c_ending" onchange="autoSave()">
+                  <option value="">선택</option>
+                  <option value="웃기게">웃기게 끝</option>
+                  <option value="여운 있게">여운 있게 끝</option>
+                  <option value="반전">반전</option>
+                  <option value="혼합">혼합</option>
+                </select></div>
+            </div>
+            <div class="btn-row" style="margin-top:4px;">
+              <button class="btn btn-primary-a1" onclick="genChoboDrama()">기획안 생성</button>
+              <button class="btn btn-ghost" onclick="clearOut('chobo-out')">초기화</button>
+            </div>
+          </div>
+
+          <!-- MODE B -->
+          <div class="mode-section" id="chobo-modeB">
+            <div class="field-group">
+              <div class="field"><label class="field-label">에피소드 번호</label>
+                <input type="text" id="b_ep" placeholder="EP.1" oninput="autoSave()" /></div>
+              <div class="field"><label class="field-label">에피소드 제목</label>
+                <input type="text" id="b_title" placeholder="이번 편 제목" oninput="autoSave()" /></div>
+              <div class="field"><label class="field-label">핵심 주제</label>
+                <input type="text" id="b_topic" placeholder="한 줄 요약" oninput="autoSave()" /></div>
+              <div class="field"><label class="field-label">드라마 프로젝트 현황</label>
+                <select id="b_status" onchange="autoSave()">
+                  <option value="">선택</option>
+                  <option value="대본 작업 중">대본 작업 중</option>
+                  <option value="스태프 모집 중">스태프 모집 중</option>
+                  <option value="배우 모집 중">배우 모집 중</option>
+                  <option value="촬영 준비 중">촬영 준비 중</option>
+                  <option value="촬영 중">촬영 중</option>
+                  <option value="편집 중">편집 중</option>
+                </select></div>
+              <div class="field"><label class="field-label">이번 편 보여줄 과정</label>
+                <textarea id="b_process" rows="3" placeholder="실제로 찍을 내용" oninput="autoSave()"></textarea></div>
+              <div class="field"><label class="field-label">핵심 감정 / 메시지</label>
+                <input type="text" id="b_msg" placeholder="시청자가 뭘 느꼈으면 하는지" oninput="autoSave()" /></div>
+              <div class="field"><label class="field-label">다음 편 예고</label>
+                <input type="text" id="b_next" placeholder="다음에 뭐가 이어지는지" oninput="autoSave()" /></div>
+            </div>
+            <div class="btn-row" style="margin-top:4px;">
+              <button class="btn btn-primary-a1" onclick="genChoboVlog()">스크립트 구조 생성</button>
+              <button class="btn btn-ghost" onclick="clearOut('chobo-out')">초기화</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="output-area">
+          <div class="output-header">
+            <span class="output-title">출력 / 작업</span>
+            <button class="copy-btn" id="copy-chobo" onclick="copyOut('chobo-out','copy-chobo')">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>복사
+            </button>
+          </div>
+          <div class="output-editor">
+            <textarea id="chobo-out" placeholder="왼쪽에서 정보 입력 후 [생성] 버튼을 누르거나, 여기서 바로 작성해도 됩니다." oninput="autoSave()"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════
+         TAB 2: 내적친구
+    ═══════════════════════════ -->
+    <div class="tab-panel" id="tab-naejuk">
+      <div class="naejuk-panel">
+        <div class="step-bar">
+          <button class="step-btn active" id="nstep-1" onclick="setNStep(1)">
+            <span class="step-num">1</span>아이디어</button>
+          <button class="step-btn" id="nstep-2" onclick="setNStep(2)">
+            <span class="step-num">2</span>시놉시스</button>
+          <button class="step-btn" id="nstep-3" onclick="setNStep(3)">
+            <span class="step-num">3</span>롱폼 대본</button>
+          <button class="step-btn" id="nstep-4" onclick="setNStep(4)">
+            <span class="step-num">4</span>숏폼 대본</button>
+        </div>
+        <div class="naejuk-body">
+          <div class="sidebar">
+            <div>
+              <div class="sidebar-title">내적친구</div>
+              <div class="sidebar-sub">공감 서사 기반 옴니버스 드라마 — 배우가 진지하게, 상황이 살아나는 채널</div>
+            </div>
+            <div class="divider"></div>
+
+            <div id="n-side-1" class="field-group">
+              <div class="sidebar-sub" style="color:var(--a2);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;">STEP 1 — 아이디어</div>
+              <div class="field"><label class="field-label">핵심 상황 (한 줄)</label>
+                <textarea id="n1_core" rows="2" placeholder="이번 에피소드의 핵심 상황" oninput="autoSave()"></textarea></div>
+              <div class="field"><label class="field-label">공감 포인트</label>
+                <textarea id="n1_relate" rows="2" placeholder="시청자가 '나 이거 알아' 할 부분" oninput="autoSave()"></textarea></div>
+              <div class="field"><label class="field-label">웃음/흥미/여운 포인트</label>
+                <textarea id="n1_funny" rows="2" placeholder="어디서 감정이 터지는지" oninput="autoSave()"></textarea></div>
+              <div class="btn-row">
+                <button class="btn btn-primary-a2" onclick="genNStep1()">아이디어 정리</button>
+                <button class="btn btn-ghost" onclick="clearOut('naejuk-out')">초기화</button>
+              </div>
+            </div>
+
+            <div id="n-side-2" class="field-group" style="display:none;">
+              <div class="sidebar-sub" style="color:var(--a2);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;">STEP 2 — 시놉시스</div>
+              <div class="field"><label class="field-label">제목</label>
+                <input type="text" id="n2_title" placeholder="에피소드 제목" oninput="autoSave()" /></div>
+              <div class="field"><label class="field-label">여주</label>
+                <textarea id="n2_hero" rows="2" placeholder="이름 / 나이 / 직업 / 성격 / 핵심 감정" oninput="autoSave()"></textarea></div>
+              <div class="field"><label class="field-label">서브</label>
+                <textarea id="n2_sub" rows="2" placeholder="이름 / 나이 / 직업 / 관계 / 성격" oninput="autoSave()"></textarea></div>
+              <div class="field"><label class="field-label">씬 구성 (4~7씬)</label>
+                <textarea id="n2_scenes" rows="5" placeholder="씬1 - 장소&#10;상황:&#10;감정:&#10;&#10;씬2 ..." oninput="autoSave()"></textarea></div>
+              <div class="field"><label class="field-label">엔딩 톤</label>
+                <select id="n2_ending" onchange="autoSave()">
+                  <option value="">선택</option>
+                  <option value="웃기게">웃기게</option>
+                  <option value="여운 있게">여운 있게</option>
+                  <option value="반전">반전</option>
+                  <option value="혼합">혼합</option>
+                </select></div>
+              <div class="btn-row">
+                <button class="btn btn-primary-a2" onclick="genNStep2()">시놉시스 생성</button>
+                <button class="btn btn-ghost" onclick="clearOut('naejuk-out')">초기화</button>
+              </div>
+            </div>
+
+            <div id="n-side-3" class="field-group" style="display:none;">
+              <div class="sidebar-sub" style="color:var(--a2);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;">STEP 3 — 롱폼 대본</div>
+              <div class="sidebar-sub">시놉시스 확정 후 롱폼 대본(5~8분)을 작성합니다.</div>
+              <div class="field"><label class="field-label">제목</label>
+                <input type="text" id="n3_title" placeholder="드라마 제목" oninput="autoSave()" /></div>
+              <div class="btn-row">
+                <button class="btn btn-primary-a2" onclick="genNStep3()">대본 틀 생성</button>
+                <button class="btn btn-ghost" onclick="clearOut('naejuk-out')">초기화</button>
+              </div>
+            </div>
+
+            <div id="n-side-4" class="field-group" style="display:none;">
+              <div class="sidebar-sub" style="color:var(--a2);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;">STEP 4 — 숏폼 대본</div>
+              <div class="sidebar-sub">롱폼 핵심 하나만 압축. 1~2분, 첫 5초 안에 상황 설정.</div>
+              <div class="field"><label class="field-label">제목</label>
+                <input type="text" id="n4_title" placeholder="숏폼 제목" oninput="autoSave()" /></div>
+              <div class="btn-row">
+                <button class="btn btn-primary-a2" onclick="genNStep4()">숏폼 틀 생성</button>
+                <button class="btn btn-ghost" onclick="clearOut('naejuk-out')">초기화</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="output-area">
+            <div class="output-header">
+              <span class="output-title" id="naejuk-out-label">아이디어 정리</span>
+              <button class="copy-btn" id="copy-naejuk" onclick="copyOut('naejuk-out','copy-naejuk')">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>복사
+              </button>
+            </div>
+            <div class="output-editor">
+              <textarea id="naejuk-out" placeholder="왼쪽에서 정보 입력 후 [생성] 버튼을 눌러주세요." oninput="autoSave()"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════
+         TAB 3: 데이트 블로그 (개편)
+    ═══════════════════════════ -->
+    <div class="tab-panel" id="tab-dateblog">
+      <div class="date-layout">
+
+        <!-- 왼쪽 사이드바: 텍스트 입력 -->
+        <div class="sidebar">
+          <div>
+            <div class="sidebar-title">데이트<br>블로그</div>
+            <div class="sidebar-sub">사진 올리고 배치 잡고, 두 버전 동시에 작업</div>
+          </div>
+          <div class="divider"></div>
+          <div class="field-group">
+            <div class="field"><label class="field-label">장소명</label>
+              <input type="text" id="d_place" placeholder="홍대 ○○카페, 한강공원 등" oninput="autoSave()" /></div>
+            <div class="field"><label class="field-label">먹은 것 / 한 것</label>
+              <textarea id="d_food" rows="2" placeholder="아메리카노, 파스타, 피크닉 등" oninput="autoSave()"></textarea></div>
+            <div class="field"><label class="field-label">특별한 에피소드</label>
+              <textarea id="d_ep" rows="3" placeholder="기억에 남는 순간, 웃겼던 일 등" oninput="autoSave()"></textarea></div>
+            <div class="field"><label class="field-label">분위기</label>
+              <input type="text" id="d_mood" placeholder="분위기, 날씨, 느낌 등" oninput="autoSave()" /></div>
+            <div class="field"><label class="field-label">추가 정보 (선택)</label>
+              <textarea id="d_info" rows="2" placeholder="주소, 가격, 영업시간 등 아는 것만" oninput="autoSave()"></textarea></div>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-primary-a3" onclick="genDateBlog()">두 버전 생성</button>
+            <button class="btn btn-ghost" onclick="clearDateAll()">전체 초기화</button>
+          </div>
+        </div>
+
+        <!-- 오른쪽: 사진존 + 블로그 출력 -->
+        <div class="date-right">
+
+          <!-- ── 사진 업로드 & 배치 존 ── -->
+          <div class="photo-zone">
+
+            <!-- 드롭존 -->
+            <div class="photo-dropzone" id="dropzone"
+                 ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+              <input type="file" id="photo-input" accept="image/*" multiple onchange="onFileSelect(event)" />
+              <div class="dropzone-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+              </div>
+              <div class="dropzone-text">사진 올리기<br><span class="dropzone-sub">클릭 또는 드래그</span></div>
+            </div>
+
+            <!-- 사진 트레이 -->
+            <div class="photo-tray" id="photo-tray">
+              <div class="photo-empty" id="photo-empty">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                  <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+                  <polyline points="21 15 16 10 5 21"/>
+                </svg>
+                <span>사진이 없어요</span>
+              </div>
+            </div>
+
+          </div><!-- /photo-zone -->
+
+          <!-- ── 블로그 2버전 출력 ── -->
+          <div class="split-output">
+            <div class="split-col">
+              <div class="split-header">
+                <span class="split-label">📌 네이버 블로그</span>
+                <button class="copy-btn" id="copy-naver" onclick="copyOut('d-naver','copy-naver')">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>복사
+                </button>
+              </div>
+              <textarea id="d-naver" placeholder="네이버 버전 — 남자친구 1인칭 시점&#10;&#10;왼쪽 정보 입력 후 [두 버전 생성]을 눌러주세요." oninput="autoSave()"></textarea>
+            </div>
+            <div class="split-col">
+              <div class="split-header">
+                <span class="split-label">📌 티스토리</span>
+                <button class="copy-btn" id="copy-tistory" onclick="copyOut('d-tistory','copy-tistory')">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>복사
+                </button>
+              </div>
+              <textarea id="d-tistory" placeholder="티스토리 버전 — 커플 '우리' 시점&#10;&#10;왼쪽 정보 입력 후 [두 버전 생성]을 눌러주세요." oninput="autoSave()"></textarea>
+            </div>
+          </div>
+
+        </div><!-- /date-right -->
+
+      </div>
+    </div>
+
+  </div><!-- /tab-content -->
+</div><!-- /app -->
+
+<div class="save-indicator" id="saveIndicator">저장됨</div>
+
+<script>
+/* ──────────────────────────────────────
+   Lock Screen
+────────────────────────────────────── */
+const PW = '0427';
+
+function unlock() {
+  const val = document.getElementById('lock-input').value;
+  if(val === PW) {
+    const lock = document.getElementById('lock-screen');
+    const app  = document.getElementById('main-app');
+    lock.classList.add('hidden');
+    app.style.visibility = 'visible';
+    setTimeout(() => lock.remove(), 500);
+    sessionStorage.setItem('nj-unlocked', '1');
+  } else {
+    const input = document.getElementById('lock-input');
+    const hint  = document.getElementById('lock-hint');
+    input.classList.add('error');
+    hint.textContent = '비밀번호가 틀렸어요';
+    hint.classList.add('err');
+    input.value = '';
+    setTimeout(() => input.classList.remove('error'), 400);
+  }
+}
+
+function clearErr() {
+  const hint = document.getElementById('lock-hint');
+  hint.textContent = '비밀번호를 입력하세요';
+  hint.classList.remove('err');
+}
+
+// 같은 세션에서 이미 해제했으면 바로 진입
+(function() {
+  if(sessionStorage.getItem('nj-unlocked') === '1') {
+    document.getElementById('lock-screen').remove();
+    document.getElementById('main-app').style.visibility = 'visible';
+  }
+})();
+
+/* ──────────────────────────────────────
+   Tab switching
+────────────────────────────────────── */
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+  document.getElementById(`tab-${tab}`).classList.add('active');
+}
+
+/* ──────────────────────────────────────
+   초보시네
+────────────────────────────────────── */
+function setChoboMode(mode) {
+  document.getElementById('modeA-btn').classList.toggle('active', mode === 'A');
+  document.getElementById('modeB-btn').classList.toggle('active', mode === 'B');
+  document.getElementById('chobo-modeA').classList.toggle('active', mode === 'A');
+  document.getElementById('chobo-modeB').classList.toggle('active', mode === 'B');
+}
+
+function genChoboDrama() {
+  const t = v('c_title')||'(제목 미입력)', theme=v('c_theme'), hero=v('c_hero'),
+        sub=v('c_sub'), loc=v('c_loc'), scenes=v('c_scenes'), ending=v('c_ending');
+  set('chobo-out',
+`===== 🎭 드라마 기획안 =====
+
+제목: ${t}
+핵심 주제: ${theme}
+
+여주: ${hero}
+서브: ${sub}
+
+로케이션: ${loc}
+씬 구성: ${scenes}
+엔딩 톤: ${ending}
+
+
+===== 📄 드라마 대본: ${t} =====
+
+등장인물
+- 여주:
+- 서브:
+
+---
+
+씬 1.  /
+
+(지문)
+:
+
+---
+
+씬 2.  /
+
+(지문)
+:
+
+---
+
+씬 3.  /
+
+(지문)
+:
+`); autoSave();
+}
+
+function genChoboVlog() {
+  const ep=v('b_ep')||'EP.N', title=v('b_title')||'(제목 미입력)', topic=v('b_topic'),
+        status=v('b_status'), process=v('b_process'), msg=v('b_msg'), next=v('b_next');
+  set('chobo-out',
+`===== 📋 ${ep} 기획안 =====
+
+제목: ${title}
+핵심 주제: ${topic}
+드라마 프로젝트 현황: ${status}
+이번 편 보여줄 과정: ${process}
+핵심 감정/메시지: ${msg}
+다음 편 예고: ${next}
+
+
+===== 🎬 ${ep} 스크립트 =====
+
+[ 오프닝 ]
+(이번 편에서 뭘 할 건지 바로 치고 들어가는 인트로)
+
+
+
+[ 브이로그 나레이션 ]
+[나레이션 #1]
+
+[나레이션 #2]
+
+[나레이션 #3]
+
+
+[ 인서트 나레이션 ]
+[인서트 #1]
+
+[인서트 #2]
+
+
+[ 엔딩 + 구독 CTA ]
+
+`); autoSave();
+}
+
+/* ──────────────────────────────────────
+   내적친구
+────────────────────────────────────── */
+const nLabels = {1:'아이디어 정리', 2:'시놉시스', 3:'롱폼 대본', 4:'숏폼 대본'};
+
+function setNStep(n) {
+  for(let i=1;i<=4;i++){
+    document.getElementById(`nstep-${i}`).classList.toggle('active', i===n);
+    document.getElementById(`n-side-${i}`).style.display = i===n ? '' : 'none';
+  }
+  document.getElementById('naejuk-out-label').textContent = nLabels[n];
+}
+
+function genNStep1() {
+  set('naejuk-out',
+`===== 💡 에피소드 아이디어 =====
+
+핵심 상황: ${v('n1_core')}
+공감 포인트: ${v('n1_relate')}
+웃음/흥미/여운 포인트: ${v('n1_funny')}
+`); autoSave();
+}
+
+function genNStep2() {
+  const title = v('n2_title')||'(제목 미입력)';
+  set('naejuk-out',
+`===== 📋 시놉시스: ${title} =====
+
+[ 인물 ]
+여주: ${v('n2_hero')}
+서브: ${v('n2_sub')}
+
+[ 씬 구성 ]
+${v('n2_scenes')}
+
+[ 엔딩 톤 ]
+롱폼: ${v('n2_ending')}
+숏폼:
+`); autoSave();
+}
+
+function genNStep3() {
+  const title = v('n3_title')||'(제목 미입력)';
+  set('naejuk-out',
+`===== 🎬 롱폼 대본: ${title} =====
+
+등장인물
+- 여주:
+- 서브:
+
+---
+
+씬 1.  /
+
+(지문)
+:
+
+---
+
+씬 2.  /
+
+(지문)
+:
+
+---
+
+씬 3.  /
+
+(지문)
+:
+
+---
+
+씬 4.  /
+
+(지문)
+:
+`); autoSave();
+}
+
+function genNStep4() {
+  const title = v('n4_title')||'(제목 미입력)';
+  set('naejuk-out',
+`===== 📱 숏폼 대본: ${title} =====
+
+등장인물
+- 여주:
+- 서브:
+
+---
+
+씬 1.  /
+
+(지문 — 첫 5초 안에 상황 설정)
+:
+
+---
+
+씬 2.  /
+
+(지문)
+:
+
+---
+(엔딩 — 마지막 대사/장면 임팩트 있게)
+`); autoSave();
+}
+
+/* ──────────────────────────────────────
+   사진 관리
+────────────────────────────────────── */
+let photos = []; // { id, url, name, pos, desc }
+
+const posOrder = ['도입부','본문 1','본문 2','본문 3','마무리','미지정'];
+const posClass  = { '도입부':'pos-intro','본문 1':'pos-body1','본문 2':'pos-body2',
+                    '본문 3':'pos-body3','마무리':'pos-end','미지정':'pos-none' };
+
+function onDragOver(e) { e.preventDefault(); document.getElementById('dropzone').classList.add('drag-over'); }
+function onDragLeave()  { document.getElementById('dropzone').classList.remove('drag-over'); }
+function onDrop(e)      { e.preventDefault(); onDragLeave(); addFiles(e.dataTransfer.files); }
+function onFileSelect(e){ addFiles(e.target.files); e.target.value=''; }
+
+function addFiles(files) {
+  [...files].forEach(f => {
+    if(!f.type.startsWith('image/')) return;
+    const url = URL.createObjectURL(f);
+    photos.push({ id: Date.now()+Math.random(), url, name: f.name, pos:'미지정', desc:'' });
+  });
+  renderPhotos();
+}
+
+function removePhoto(id) {
+  photos = photos.filter(p => p.id !== id);
+  renderPhotos();
+}
+
+function renderPhotos() {
+  const tray = document.getElementById('photo-tray');
+  const empty = document.getElementById('photo-empty');
+
+  // 기존 카드 제거 (photo-empty는 유지)
+  tray.querySelectorAll('.photo-card').forEach(el => el.remove());
+
+  if(photos.length === 0) {
+    empty.style.display = 'flex';
+    return;
+  }
+  empty.style.display = 'none';
+
+  photos.forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'photo-card';
+    card.dataset.id = p.id;
+
+    const posOptions = posOrder.map(o =>
+      `<option value="${o}" ${p.pos===o?'selected':''}>${o}</option>`
+    ).join('');
+
+    card.innerHTML = `
+      <img class="photo-thumb" src="${p.url}" alt="${p.name}" />
+      <button class="photo-del" onclick="removePhoto(${p.id})" title="삭제">✕</button>
+      <div class="photo-meta">
+        <div class="photo-name" title="${p.name}">${p.name}</div>
+        <select class="photo-pos" onchange="updatePhotoPos(${p.id}, this.value)">${posOptions}</select>
+        <input class="photo-desc-input" type="text" placeholder="사진 설명 (카페 외관 등)"
+               value="${p.desc}" oninput="updatePhotoDesc(${p.id}, this.value)" />
+      </div>`;
+    tray.appendChild(card);
+  });
+}
+
+function updatePhotoPos(id, pos) {
+  const p = photos.find(x => x.id === id);
+  if(p) p.pos = pos;
+}
+
+function updatePhotoDesc(id, desc) {
+  const p = photos.find(x => x.id === id);
+  if(p) p.desc = desc;
+}
+
+/* 배치 순서대로 정렬된 사진 마커 생성 */
+function buildPhotoMarkers() {
+  if(photos.length === 0) return {};
+  const markers = {};
+  const sorted = [...photos].sort((a,b) => posOrder.indexOf(a.pos)-posOrder.indexOf(b.pos));
+  sorted.forEach(p => {
+    const label = p.desc ? `${p.desc}` : p.name.replace(/\.[^.]+$/,'');
+    const marker = `\n[📷 사진: ${label}]\n`;
+    if(!markers[p.pos]) markers[p.pos] = '';
+    markers[p.pos] += marker;
+  });
+  return markers;
+}
+
+/* ──────────────────────────────────────
+   데이트 블로그 생성
+────────────────────────────────────── */
+function genDateBlog() {
+  const place = v('d_place')||'(장소 미입력)', food=v('d_food'), ep=v('d_ep'),
+        mood=v('d_mood'), info=v('d_info');
+  const m = buildPhotoMarkers();
+
+  const pm = pos => m[pos]||'';
+
+  // ── 네이버 버전 (남자친구 1인칭) ──
+  const naver =
+`[제목]
+${place} 데이트 후기 | (검색 키워드 포함 제목 작성)
+
+${pm('도입부')}
+[도입부]
+(그날의 분위기나 상황을 재밌게 — 남자친구 1인칭으로 시작)
+
+
+${pm('본문 1')}
+[본문 — 장소 & 첫인상]
+장소: ${place}
+(장소 분위기, 첫인상 묘사)
+
+
+${pm('본문 2')}
+[본문 — 먹은 것 & 한 것]
+${food}
+(먹은 것 / 한 것 후기)
+
+
+${pm('본문 3')}
+[본문 — 에피소드]
+${ep}
+(특별한 순간 묘사)
+
+분위기: ${mood}
+${info ? `참고 정보: ${info}` : '[확인 필요: 주소, 가격]'}
+
+${pm('마무리')}
+[마무리]
+(짧고 유쾌한 마무리 한 마디)
+
+
+[해시태그]
+#${place.replace(/\s/g,'')} #데이트 #데이트코스 #커플데이트 #주말데이트
+`;
+
+  // ── 티스토리 버전 (커플 "우리" 시점) ──
+  const tistory =
+`[제목]
+${place} 커플 데이트 후기 | (SEO 키워드 포함 제목 작성)
+
+${pm('도입부')}
+[도입부]
+(우리 커플이 이 장소에 가게 된 이유/계기 — "우리" 시점)
+
+
+${pm('본문 1')}
+[본문 — 장소 소개]
+장소: ${place}
+(분위기, 접근성, 첫인상)
+
+
+${pm('본문 2')}
+[본문 — 메뉴 & 활동]
+${food}
+(구체적인 후기, 커플 반응 교차 서술)
+
+
+${pm('본문 3')}
+[본문 — 에피소드 & 분위기]
+${ep}
+분위기: ${mood}
+
+
+${pm('마무리')}
+[총평]
+데이트 코스 추천 여부:
+
+
+[실용 정보]
+📍 주소: ${info||'[확인 필요]'}
+⏰ 영업시간: [확인 필요]
+💰 가격대: [확인 필요]
+
+
+[해시태그]
+#${place.replace(/\s/g,'')} #커플데이트 #데이트코스 #데이트추천 #주말데이트
+`;
+
+  set('d-naver', naver);
+  set('d-tistory', tistory);
+  autoSave();
+}
+
+function clearDateAll() {
+  set('d-naver',''); set('d-tistory','');
+  photos = []; renderPhotos();
+  autoSave();
+}
+
+/* ──────────────────────────────────────
+   Utils
+────────────────────────────────────── */
+function v(id) { return (document.getElementById(id)?.value||'').trim(); }
+function set(id, val) { const el=document.getElementById(id); if(el) el.value=val; }
+function clearOut(id) { set(id,''); autoSave(); }
+
+function copyOut(id, btnId) {
+  const el = document.getElementById(id);
+  if(!el) return;
+  navigator.clipboard.writeText(el.value).then(() => {
+    const btn = document.getElementById(btnId);
+    const orig = btn.innerHTML;
+    btn.classList.add('copied');
+    btn.textContent = '복사됨 ✓';
+    setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = orig; }, 2000);
+  });
+}
+
+/* ──────────────────────────────────────
+   Auto Save (텍스트만 — 사진은 URL만 저장 안 됨)
+────────────────────────────────────── */
+let saveTimer;
+function autoSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    const ids = ['c_title','c_theme','c_hero','c_sub','c_loc','c_scenes','c_ending',
+                 'b_ep','b_title','b_topic','b_status','b_process','b_msg','b_next','chobo-out',
+                 'n1_core','n1_relate','n1_funny','n2_title','n2_hero','n2_sub','n2_scenes',
+                 'n2_ending','n3_title','n4_title','naejuk-out',
+                 'd_place','d_food','d_ep','d_mood','d_info','d-naver','d-tistory'];
+    const data = {};
+    ids.forEach(id => { const el=document.getElementById(id); if(el) data[id]=el.value; });
+    localStorage.setItem('nj-workspace-v2', JSON.stringify(data));
+    const ind = document.getElementById('saveIndicator');
+    ind.classList.add('show');
+    setTimeout(() => ind.classList.remove('show'), 1800);
+  }, 600);
+}
+
+function loadSaved() {
+  try {
+    const raw = localStorage.getItem('nj-workspace-v2');
+    if(!raw) return;
+    const data = JSON.parse(raw);
+    Object.entries(data).forEach(([id, val]) => { const el=document.getElementById(id); if(el) el.value=val; });
+  } catch(e) {}
+}
+
+loadSaved();
+renderPhotos();
+</script>
+</body>
+</html>
