@@ -310,6 +310,38 @@
       font-size:12px; cursor:pointer; transition:all 0.18s; letter-spacing:0.03em;
       font-family:'Noto Sans KR',sans-serif; }
     .draft-copy-btn:hover { background:var(--a3d); }
+
+    /* ── AI 파이프라인 ── */
+    .ai-pipeline-section { flex-shrink:0; border-top:1px solid var(--border); padding:10px 14px 12px; }
+    .ai-setting-row { display:flex; align-items:center; gap:6px; margin-bottom:8px; }
+    .ai-setting-label { font-size:10px; color:var(--muted); white-space:nowrap; }
+    .ai-key-input { flex:1; background:var(--s2); border:1px solid var(--border); border-radius:6px;
+      color:var(--text); font-family:'Noto Sans KR',sans-serif; font-size:11px; padding:5px 9px;
+      outline:none; min-width:0; }
+    .ai-key-input:focus { border-color:var(--brd2); }
+    .ai-key-save { background:var(--s2); border:1px solid var(--border); color:var(--muted);
+      border-radius:6px; padding:5px 10px; font-size:10px; cursor:pointer; white-space:nowrap;
+      font-family:'Noto Sans KR',sans-serif; transition:all 0.15s; }
+    .ai-key-save:hover { border-color:var(--a3); color:var(--a3); }
+    .ai-run-btn { width:100%; display:flex; align-items:center; justify-content:center; gap:8px;
+      background:linear-gradient(135deg,var(--a3),#7b6cf5); color:#fff; border:none;
+      border-radius:9px; padding:11px; font-size:13px; font-weight:600; cursor:pointer;
+      font-family:'Noto Sans KR',sans-serif; transition:all 0.2s; letter-spacing:0.03em; }
+    .ai-run-btn:hover { opacity:0.88; transform:translateY(-1px); }
+    .ai-run-btn:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
+    .pipeline-progress { margin-top:10px; display:none; flex-direction:column; gap:4px; }
+    .pipeline-progress.visible { display:flex; }
+    .pipe-step { display:flex; align-items:center; gap:8px; padding:6px 10px;
+      border-radius:7px; background:var(--s2); font-size:11px; color:var(--muted);
+      border:1px solid var(--border); transition:all 0.3s; }
+    .pipe-step.active { border-color:var(--a3); color:var(--text); background:var(--a3d); }
+    .pipe-step.done { border-color:#5cb85c; color:#5cb85c; background:rgba(92,184,92,0.08); }
+    .pipe-step.error { border-color:#e06060; color:#e06060; }
+    .pipe-icon { font-size:14px; width:18px; text-align:center; }
+    .pipe-label { flex:1; }
+    .pipe-spin { width:12px; height:12px; border:2px solid var(--a3); border-top-color:transparent;
+      border-radius:50%; animation:spin 0.7s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
   </style>
 </head>
 <body>
@@ -457,39 +489,22 @@
           </div>
 
           <!-- ▸ 제목 먼저 짜기 -->
-          <div class="section-hd a3">📌 제목 먼저 짜기</div>
-          <div class="title-section">
-            <div class="title-kw-row">
-              <span class="title-kw-badge">키워드</span>
-              <input type="text" id="d_kw1" placeholder="지역 (예: 홍대, 성수)" oninput="autoSave()" />
-              <input type="text" id="d_kw2" placeholder="장소 특징 (예: 루프탑 카페)" oninput="autoSave()" />
-            </div>
-            <div class="title-confirmed">
-              <input type="text" id="d_final_title"
-                placeholder="확정 제목 (예: 홍대 데이트 코스 루프탑 카페 | 40자 이내)"
-                oninput="updateTitleLen(); autoSave()" maxlength="60" />
-              <div class="title-len-row">
-                <span class="title-len" id="title-len-badge">0자</span>
-                <span style="font-size:9px;color:var(--muted);opacity:0.7;">권장 40자 이내 · 상위노출 후 수정 금지</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- ▸ 코스 연결 -->
-          <div class="section-hd muted">코스 연결</div>
+          <!-- ▸ 제목 먼저 짜기 -->
           <div class="field-group">
             <div class="field">
-              <label class="field-label">코스 태그</label>
-              <input type="text" id="d_course_tag" placeholder="예: 성수 데이트 241130" oninput="autoSave()" />
-            </div>
-            <div class="field">
-              <label class="field-label">코스 내 순서</label>
-              <div class="chip-group" data-group="courseStop">
-                <button class="chip" onclick="selectChip('courseStop','STOP 1',this)">STOP 1</button>
-                <button class="chip" onclick="selectChip('courseStop','STOP 2',this)">STOP 2</button>
-                <button class="chip" onclick="selectChip('courseStop','STOP 3',this)">STOP 3</button>
-                <button class="chip" onclick="selectChip('courseStop','STOP 4',this)">STOP 4</button>
-                <button class="chip" onclick="selectChip('courseStop','단독',this)">단독 포스팅</button>
+              <label class="field-label" style="color:var(--a3);">📌 제목 먼저 짜기</label>
+              <div style="display:flex;gap:6px;margin-bottom:6px;">
+                <input type="text" id="d_kw1" placeholder="지역 (예: 홍대, 성수)" oninput="autoSave()"
+                  style="flex:1;background:var(--s2);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:'Noto Sans KR',sans-serif;font-size:12px;font-weight:300;padding:7px 10px;outline:none;" />
+                <input type="text" id="d_kw2" placeholder="장소 특징" oninput="autoSave()"
+                  style="flex:1;background:var(--s2);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:'Noto Sans KR',sans-serif;font-size:12px;font-weight:300;padding:7px 10px;outline:none;" />
+              </div>
+              <input type="text" id="d_final_title"
+                placeholder="확정 제목 (40자 이내 · 상위노출 후 수정 금지)"
+                oninput="updateTitleLen(); autoSave()" maxlength="60"
+                style="width:100%;background:var(--s2);border:1px solid var(--a3);border-radius:7px;color:var(--text);font-family:'Noto Sans KR',sans-serif;font-size:13px;font-weight:400;padding:8px 11px;outline:none;box-sizing:border-box;" />
+              <div style="display:flex;justify-content:flex-end;margin-top:4px;">
+                <span class="title-len" id="title-len-badge">0자</span>
               </div>
             </div>
           </div>
@@ -764,13 +779,46 @@
               oninput="autoSave()"></textarea>
           </div>
 
-          <!-- ── 초안 복사 (AI 스킬용) ── -->
-          <div style="flex-shrink:0;padding:8px 14px 12px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center;">
-            <button class="draft-copy-btn" onclick="copyDraft()">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-              AI 초안 요청용 복사
+          <!-- ── AI 파이프라인 ── -->
+          <div class="ai-pipeline-section">
+            <!-- Gemini 키 설정 -->
+            <div class="ai-setting-row">
+              <span class="ai-setting-label">🔑 Gemini 키</span>
+              <input type="password" id="gemini-key-input" class="ai-key-input"
+                placeholder="AIza..." oninput="aiKeyChanged()" />
+              <button class="ai-key-save" onclick="saveGeminiKey()">저장</button>
+            </div>
+            <!-- 실행 버튼 -->
+            <button class="ai-run-btn" id="ai-run-btn" onclick="runAIPipeline()">
+              <span>🤖</span> AI 글쓰기 시작 (4단계)
             </button>
-            <span style="font-size:10px;color:var(--muted);opacity:0.7;">클로드에 붙여넣으면 블로그 글 생성</span>
+            <!-- 진행 상태 -->
+            <div class="pipeline-progress" id="pipeline-progress">
+              <div class="pipe-step" id="pipe-1">
+                <span class="pipe-icon">✍️</span>
+                <span class="pipe-label">1단계 · 제미나이 초안 작성</span>
+              </div>
+              <div class="pipe-step" id="pipe-2">
+                <span class="pipe-icon">🔍</span>
+                <span class="pipe-label">2단계 · 클로드 피드백</span>
+              </div>
+              <div class="pipe-step" id="pipe-3">
+                <span class="pipe-icon">✏️</span>
+                <span class="pipe-label">3단계 · 제미나이 수정</span>
+              </div>
+              <div class="pipe-step" id="pipe-4">
+                <span class="pipe-icon">✨</span>
+                <span class="pipe-label">4단계 · 제미나이 최종 완성</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── 초안 복사 (수동 백업용) ── -->
+          <div style="flex-shrink:0;padding:4px 14px 10px;display:flex;gap:8px;align-items:center;">
+            <button class="draft-copy-btn" onclick="copyDraft()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2v1"/></svg>
+              수동 복사 (AI 없이)
+            </button>
           </div>
 
         </div>
@@ -905,6 +953,258 @@ function copyDraft(){
     btn.style.borderColor='#6fcf6f';
     setTimeout(()=>{ btn.innerHTML=orig; btn.style.color=''; btn.style.borderColor=''; },2000);
   });
+}
+
+/* ══════════════════════════════════════
+   AI 파이프라인 (Gemini → Claude → Gemini → Gemini)
+   ══════════════════════════════════════ */
+
+/* Gemini 키 관리 */
+function aiKeyChanged(){ /* 실시간 반응 없음 — 저장 버튼 누를 때만 */ }
+function saveGeminiKey(){
+  const k=document.getElementById('gemini-key-input').value.trim();
+  if(!k){ alert('키를 입력해주세요.'); return; }
+  localStorage.setItem('nj-gemini-key', k);
+  const btn=event.target;
+  btn.textContent='✅';
+  setTimeout(()=>btn.textContent='저장',1500);
+}
+(function loadGeminiKey(){
+  const k=localStorage.getItem('nj-gemini-key');
+  if(k){ const el=document.getElementById('gemini-key-input'); if(el) el.value=k; }
+})();
+
+/* 현재 입력 데이터 수집 */
+function collectDateInfo(){
+  const kw1=v('d_kw1'), kw2=v('d_kw2'), finalTitle=v('d_final_title');
+  const place=v('d_place'), region=v('d_region');
+  const typeRaw=d_placeType==='기타'?(d_placeCustom||'기타'):d_placeType;
+  const food=v('d_food'), ep=v('d_ep');
+  const vibes=d_vibes.join(', ');
+  const priceRange=d_priceRange, parking=d_parking, revisit=d_revisit, isAd=d_isAd;
+  const clientKw=v('d_client_kw'), clientTags=v('d_client_tags');
+  const info=v('d_info'), phone=v('d_phone'), sns=v('d_client_sns');
+  const ratings=Object.entries(d_ratings).map(([k,val])=>`${k}:${val}점`).join(', ');
+  return `[코스 제목] ${v('d_course_tag')||''}
+[제목 키워드] ${kw1} ${kw2}
+[확정 제목] ${finalTitle||'(미입력)'}
+[장소] ${place||'(미입력)'}  [지역] ${region}
+[장소 유형] ${typeRaw}  [날씨] ${d_weather}  [분위기] ${vibes}
+[먹은 것/한 것] ${food}
+[특별한 에피소드] ${ep}
+[가격대] ${priceRange}  [주차] ${parking}  [재방문] ${revisit}
+[별점] ${ratings}
+[업체 정보] ${info}  [전화] ${phone}  [SNS] ${sns}
+[협찬] ${isAd||'자비'}  [필수 키워드] ${clientKw}  [지정 태그] ${clientTags}`;
+}
+
+/* Gemini API 호출 */
+async function callGemini(prompt){
+  const key=localStorage.getItem('nj-gemini-key');
+  if(!key) throw new Error('Gemini API 키가 없습니다. 키를 입력하고 저장해주세요.');
+  const res=await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
+    { method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ contents:[{ parts:[{text:prompt}] }],
+        generationConfig:{ temperature:0.9, maxOutputTokens:4096 } }) }
+  );
+  if(!res.ok){ const e=await res.json(); throw new Error('Gemini 오류: '+(e.error?.message||res.status)); }
+  const data=await res.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+}
+
+/* Claude API 호출 (Netlify 함수 경유) */
+async function callClaude(prompt){
+  const res=await fetch('/.netlify/functions/claude',{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      model:'claude-haiku-4-5-20251001',
+      max_tokens:2000,
+      messages:[{role:'user',content:prompt}]
+    })
+  });
+  if(!res.ok){ const e=await res.json(); throw new Error('Claude 오류: '+(e.error||res.status)); }
+  const data=await res.json();
+  return data.content?.[0]?.text || '';
+}
+
+/* 파이프라인 스텝 상태 UI */
+function setPipeStep(n, state){
+  // state: 'idle' | 'active' | 'done' | 'error'
+  const el=document.getElementById('pipe-'+n);
+  if(!el) return;
+  el.className='pipe-step '+(state==='idle'?'':state);
+  const iconMap={ idle:['✍️','🔍','✏️','✨'][n-1], active:'⏳', done:'✅', error:'❌' };
+  const labelMap={
+    1:'1단계 · 제미나이 초안 작성',
+    2:'2단계 · 클로드 피드백',
+    3:'3단계 · 제미나이 수정',
+    4:'4단계 · 제미나이 최종 완성'
+  };
+  el.innerHTML=`<span class="pipe-icon">${state==='active'?'<span class="pipe-spin"></span>':iconMap[state]}</span><span class="pipe-label">${labelMap[n]}</span>`;
+}
+
+/* 네이버/티스토리 분리 파서 */
+function parseOutput(text){
+  const naverIdx=text.indexOf('네이버 블로그 버전');
+  const tistIdx= text.indexOf('티스토리 버전');
+  let naver='', tistory='';
+  if(naverIdx!==-1 && tistIdx!==-1){
+    naver=text.slice(naverIdx, tistIdx).replace(/={3,}.*네이버.*={3,}/,'').trim();
+    tistory=text.slice(tistIdx).replace(/={3,}.*티스토리.*={3,}/,'').trim();
+  } else {
+    // 구분선 못 찾으면 전체를 네이버에
+    naver=text.trim();
+  }
+  return {naver, tistory};
+}
+
+/* 메인 파이프라인 실행 */
+async function runAIPipeline(){
+  const btn=document.getElementById('ai-run-btn');
+  const prog=document.getElementById('pipeline-progress');
+
+  // 키 체크
+  if(!localStorage.getItem('nj-gemini-key')){
+    alert('Gemini API 키를 입력하고 저장해주세요!');
+    document.getElementById('gemini-key-input')?.focus();
+    return;
+  }
+
+  // UI 초기화
+  btn.disabled=true;
+  btn.innerHTML='<span class="pipe-spin" style="border-color:#fff;border-top-color:transparent;width:14px;height:14px;"></span> 작성 중...';
+  prog.classList.add('visible');
+  [1,2,3,4].forEach(n=>setPipeStep(n,'idle'));
+
+  const info=collectDateInfo();
+
+  try {
+    /* ── 1단계: Gemini 초안 ── */
+    setPipeStep(1,'active');
+    const prompt1=`당신은 데이트 블로그 전문 작가입니다. 아래 정보로 완성된 블로그 글 2가지 버전을 작성해주세요.
+
+${info}
+
+【작성 규칙】
+- 네이버 버전: 남자친구 1인칭 ("나는","내가","여자친구가"), 유쾌하고 약간 허세 섞인 남자 말투, 1500~2000자
+- 티스토리 버전: 커플 "우리" 시점, 어요체 풍부하게 ("~했어요","~예요"), 정보성 강조, 1500~2000자
+- 이모지는 감정 표현 문장 끝에만 (장소/음식/행동 묘사엔 금지)
+- 해시태그 각 10~15개
+- 글 중간에 [사진: ~~ 사진] 형태로 사진 위치 표시
+
+출력 형식:
+===== 📌 네이버 블로그 버전 =====
+[제목]
+[본문]
+[해시태그]
+
+===== 📌 티스토리 버전 =====
+[제목]
+[본문]
+[실용 정보]
+[해시태그]`;
+    const draft=await callGemini(prompt1);
+    setPipeStep(1,'done');
+
+    /* ── 2단계: Claude 피드백 ── */
+    setPipeStep(2,'active');
+    const prompt2=`아래 데이트 블로그 초안을 검토하고 개선 피드백을 주세요.
+
+${draft}
+
+【피드백 기준】
+1. 문체가 자연스러운가? (AI 티 나지 않는가)
+2. 네이버 버전 — 실제 남자가 쓴 것처럼 느껴지는가
+3. 티스토리 버전 — 어요체가 충분히 자연스럽게 쓰였는가
+4. SEO 키워드(장소명, 지역명)가 제목과 본문에 잘 녹아있는가
+5. 이모지 사용이 원칙대로 됐는가 (감정 표현에만)
+6. 길이가 충분한가 (1500자 이상)
+7. 구체적으로 수정할 부분과 이유
+
+피드백만 작성하세요 (수정본은 작성하지 마세요).`;
+    const feedback=await callClaude(prompt2);
+    setPipeStep(2,'done');
+
+    /* ── 3단계: Gemini 수정 ── */
+    setPipeStep(3,'active');
+    const prompt3=`아래 블로그 초안을 피드백에 따라 완전히 개선해주세요.
+
+【원본 초안】
+${draft}
+
+【피드백】
+${feedback}
+
+피드백을 충실히 반영해서 두 버전 모두 더 자연스럽고 완성도 높게 재작성해주세요.
+
+출력 형식:
+===== 📌 네이버 블로그 버전 =====
+[제목]
+[본문]
+[해시태그]
+
+===== 📌 티스토리 버전 =====
+[제목]
+[본문]
+[실용 정보]
+[해시태그]`;
+    const revised=await callGemini(prompt3);
+    setPipeStep(3,'done');
+
+    /* ── 4단계: Gemini 최종 완성 ── */
+    setPipeStep(4,'active');
+    const prompt4=`아래 블로그 글의 최종 완성본을 만들어주세요.
+
+${revised}
+
+【최종 점검】
+- 네이버 버전: 제목 40자 이내, 해시태그 10~15개, 남자 1인칭 유지
+- 티스토리 버전: 어요체 풍부, 실용 정보 박스(주소/영업시간/가격) 포함, 해시태그 10~15개
+- AI 흔적 완전 제거 (너무 정형화된 표현, 반복 패턴 등)
+- 두 버전 명확히 구분
+
+출력 형식 (정확히 지켜주세요):
+===== 📌 네이버 블로그 버전 =====
+[제목]
+[본문]
+[해시태그]
+
+===== 📌 티스토리 버전 =====
+[제목]
+[본문]
+[실용 정보]
+[해시태그]`;
+    const final=await callGemini(prompt4);
+    setPipeStep(4,'done');
+
+    /* ── 결과 채우기 ── */
+    const {naver, tistory}=parseOutput(final);
+    const naverTA=document.getElementById('d-naver');
+    const tistTA=document.getElementById('d-tistory');
+    if(naverTA){ naverTA.value=naver; naverTA.dispatchEvent(new Event('input')); }
+    if(tistTA){ tistTA.value=tistory; tistTA.dispatchEvent(new Event('input')); }
+    autoSave();
+
+    btn.innerHTML='✅ 완성! 다시 생성하려면 클릭';
+    btn.disabled=false;
+    btn.style.background='linear-gradient(135deg,#5cb85c,#4a9e4a)';
+
+  } catch(err){
+    // 현재 진행 중인 스텝 에러 표시
+    [1,2,3,4].forEach(n=>{
+      const el=document.getElementById('pipe-'+n);
+      if(el && el.classList.contains('active')) setPipeStep(n,'error');
+    });
+    btn.innerHTML='❌ 오류 — 다시 시도';
+    btn.disabled=false;
+    btn.style.background='linear-gradient(135deg,#e06060,#c04040)';
+    alert('오류: '+err.message);
+  }
+
+  setTimeout(()=>{
+    btn.style.background='';
+  }, 5000);
 }
 
 /* ── 데이트 블로그 상태 ── */
