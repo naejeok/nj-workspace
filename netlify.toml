@@ -1,0 +1,8 @@
+[functions]
+  node_bundler = "esbuild"
+
+[functions."claude"]
+  timeout = 26
+
+[functions."kakao"]
+  timeout = 10
